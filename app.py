@@ -95,9 +95,14 @@ COLS_REDES = [
 
 
 def carregar_redes(caminho="data/redes.csv"):
-    """Dados de redes sociais (preenchidos à mão pela equipe). Colunas vazias se não houver."""
+    """Dados de redes sociais (preenchidos à mão pela equipe). Colunas vazias se não houver.
+
+    Lê tudo como texto (dtype=str) de propósito: se uma coluna tiver números só em
+    algumas linhas (ex.: 'Seguidores X'), o pandas a leria como float e a mistura
+    float+texto quebraria a serialização Arrow do st.data_editor no servidor.
+    """
     try:
-        return pd.read_csv(caminho)
+        return pd.read_csv(caminho, dtype=str).fillna("")
     except FileNotFoundError:
         return pd.DataFrame(columns=["Candidato", *COLS_REDES])
 
