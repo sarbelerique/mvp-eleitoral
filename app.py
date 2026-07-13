@@ -40,12 +40,9 @@ st.caption(
 
 with st.sidebar:
     st.header("1. Dados")
-    st.markdown(
-        "Envie um **CSV ou Excel** com uma linha por região e estas colunas:\n\n"
-        "`regiao` · `votos_candidato` · `votos_validos` · `votos_esquerda`\n\n"
-        "*(votos_esquerda = soma dos partidos de esquerda, incluindo o candidato)*"
+    st.caption(
+        "Escolha um deputado do PSOL (RJ 2022). Dados reais do TSE, por município."
     )
-    arquivo = st.file_uploader("Arquivo", type=["csv", "xlsx"])
     DATASETS = {
         "Exemplo (ilustrativo)": "data/exemplo.csv",
         "Fed · Tarcísio Motta": "data/dep_tarcisio_motta.csv",
@@ -60,10 +57,7 @@ with st.sidebar:
         "Est · Benny Briolly": "data/dep_benny_briolly.csv",
         "Est · Josemar Carvalho": "data/dep_josemar_carvalho.csv",
     }
-    dataset = st.selectbox(
-        "Ou use um deputado do PSOL (RJ 2022)", list(DATASETS),
-        index=0, disabled=arquivo is not None,
-    )
+    dataset = st.selectbox("Deputado", list(DATASETS), index=0)
     st.divider()
     st.header("2. Sobre os limiares")
     st.markdown(
@@ -72,19 +66,16 @@ with st.sidebar:
         "- **Consolidar**: o resto"
     )
 
-if arquivo is not None:
-    df = pd.read_csv(arquivo) if arquivo.name.endswith(".csv") else pd.read_excel(arquivo)
+df = pd.read_csv(DATASETS[dataset])
+if dataset.startswith(("Fed ·", "Est ·")):
+    cargo = "Deputado Federal" if dataset.startswith("Fed") else "Deputado Estadual"
+    st.info(
+        f"Dados **reais do TSE** — {dataset[6:]} (PSOL, {cargo}, RJ 2022), por município. "
+        "`votos_esquerda` = PDT, PT, PSTU, REDE, PCB, PCO, PSB, PV, PSOL e PCdoB "
+        "(nominais + legenda)."
+    )
 else:
-    df = pd.read_csv(DATASETS[dataset])
-    if dataset.startswith(("Fed ·", "Est ·")):
-        cargo = "Deputado Federal" if dataset.startswith("Fed") else "Deputado Estadual"
-        st.info(
-            f"Dados **reais do TSE** — {dataset[6:]} (PSOL, {cargo}, RJ 2022), por município. "
-            "`votos_esquerda` = PDT, PT, PSTU, REDE, PCB, PCO, PSB, PV, PSOL e PCdoB "
-            "(nominais + legenda)."
-        )
-    else:
-        st.info("Mostrando **dados de exemplo** (ilustrativos). Envie seu arquivo na barra lateral.")
+    st.info("Mostrando **dados de exemplo** (ilustrativos).")
 
 problemas = validar(df)
 erros = [p for p in problemas if not p.startswith("Atenção")]
