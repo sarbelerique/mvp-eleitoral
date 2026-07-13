@@ -125,7 +125,10 @@ def tabela_comparativa():
     for c in COLS_REDES:
         if c not in base.columns:
             base[c] = ""
-    return base.fillna("")
+    base["Seguidores IG"] = pd.to_numeric(base["Seguidores IG"], errors="coerce").astype("Int64")
+    texto = [c for c in COLS_REDES if c != "Seguidores IG"]
+    base[texto] = base[texto].fillna("")
+    return base
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -407,6 +410,7 @@ with tab_comp:
             "Votos": st.column_config.NumberColumn("Votos", format="%d"),
             "Voto órfão": st.column_config.NumberColumn("Voto órfão", format="%d"),
             "% capta esquerda": st.column_config.NumberColumn("% capta esquerda", format="%.1f%%"),
+            "Seguidores IG": st.column_config.NumberColumn("Seguidores IG", format="%d"),
         },
     )
 
@@ -416,7 +420,8 @@ with tab_comp:
         file_name="comparativo_candidatos.csv", mime="text/csv",
     )
     st.caption(
-        "💡 As colunas de redes sociais começam vazias — preencha aqui, ou me peça para deixá-las "
-        "fixas no app. As edições feitas nesta tela **não ficam salvas** ao recarregar (para isso, "
-        "os dados precisam ser gravados no repositório ou numa planilha conectada)."
+        "📱 Seguidores do **Instagram** são **aproximados**, coletados na web (~jul/2026) — a rede "
+        "mais relevante aqui. Demais colunas ficam a preencher. As edições feitas nesta tela "
+        "**não ficam salvas** ao recarregar (para isso, os dados precisam ser gravados no "
+        "repositório ou numa planilha conectada)."
     )
