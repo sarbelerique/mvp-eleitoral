@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Dados brutos pesados (não versionar — só os CSVs derivados em data/ vão)
+*.xlsx
+!data/*.xlsx
+votacao_secao_*.csv
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+
+# Saídas locais
+scratchpad/
+*.log
