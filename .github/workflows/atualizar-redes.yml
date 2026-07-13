@@ -1,10 +1,11 @@
 name: Atualizar redes sociais
 
 on:
-  schedule:
-    # Segunda e quinta, 11:00 UTC (~08:00 no horário de Brasília)
-    - cron: "0 11 * * 1,4"
-  workflow_dispatch: {}   # permite rodar manualmente pelo site do GitHub
+  # NOTA: o Instagram bloqueia IPs de datacenter (como os do GitHub Actions),
+  # então este workflow falha na nuvem. A automação gratuita que FUNCIONA roda
+  # na máquina local (IP residencial) — veja atualizar_e_enviar.ps1.
+  # Mantido só para acionamento manual (ex.: se um dia usarmos proxy/API).
+  workflow_dispatch: {}
 
 permissions:
   contents: write
