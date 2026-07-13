@@ -24,7 +24,6 @@ PRIORIDADE_DESC = {
 }
 
 DATASETS = {
-    "Exemplo (ilustrativo)": "data/exemplo.csv",
     "Fed · Tarcísio Motta": "data/dep_tarcisio_motta.csv",
     "Fed · Talíria Petrone": "data/dep_taliria_petrone.csv",
     "Fed · Chico Alencar": "data/dep_chico_alencar.csv",
@@ -89,6 +88,46 @@ def leitura_automatica(nome, r, o):
     return texto
 
 
+COLS_REDES = [
+    "Instagram", "Seguidores IG", "TikTok", "Seguidores TikTok",
+    "X (Twitter)", "Seguidores X", "Engajamento médio (%)", "Observações",
+]
+
+
+def carregar_redes(caminho="data/redes.csv"):
+    """Dados de redes sociais (preenchidos à mão pela equipe). Colunas vazias se não houver."""
+    try:
+        return pd.read_csv(caminho)
+    except FileNotFoundError:
+        return pd.DataFrame(columns=["Candidato", *COLS_REDES])
+
+
+def tabela_comparativa():
+    """Uma linha por candidato com os números eleitorais mais significativos + redes sociais."""
+    linhas = []
+    for chave, caminho in DATASETS.items():
+        dd = carregar(caminho)
+        oo = oportunidades(dd)
+        alvos = oo[oo["potencial_extra"] > 0]
+        linhas.append({
+            "Candidato": nome_dep(chave),
+            "Cargo": "Federal" if chave.startswith("Fed") else "Estadual",
+            "Votos": int(dd["votos_candidato"].sum()),
+            "% capta esquerda": round(oo["taxa_global"].iloc[0] * 100, 1),
+            "Voto órfão": int(dd["voto_orfao"].sum()),
+            "Reduto (mais votos)": dd.loc[dd["votos_candidato"].idxmax(), "regiao"],
+            "Melhor alvo p/ crescer": alvos.iloc[0]["regiao"] if not alvos.empty else "—",
+            "Regiões alto potencial": int((dd["prioridade"] == "Alto potencial").sum()),
+        })
+    base = pd.DataFrame(linhas)
+    redes = carregar_redes()
+    base = base.merge(redes, on="Candidato", how="left")
+    for c in COLS_REDES:
+        if c not in base.columns:
+            base[c] = ""
+    return base.fillna("")
+
+
 # ────────────────────────────────────────────────────────────────────────────
 # Cabeçalho
 # ────────────────────────────────────────────────────────────────────────────
@@ -145,11 +184,8 @@ r = resumo(d)
 o = oportunidades(d)
 nome = nome_dep(dataset)
 
-if dataset.startswith(("Fed ·", "Est ·")):
-    cargo = "Deputado Federal" if dataset.startswith("Fed") else "Deputado Estadual"
-    st.caption(f"Mostrando: **{nome}** — PSOL, {cargo}, RJ 2022 (dados reais do TSE).")
-else:
-    st.caption("Mostrando **dados de exemplo** (ilustrativos).")
+cargo = "Deputado Federal" if dataset.startswith("Fed") else "Deputado Estadual"
+st.caption(f"Mostrando: **{nome}** — PSOL, {cargo}, RJ 2022 (dados reais do TSE).")
 
 # Recado principal
 alvo_top = o[o["potencial_extra"] > 0].head(1)
@@ -352,40 +388,35 @@ with tab_tab:
 
 # ── Comparar ────────────────────────────────────────────────────────────────
 with tab_comp:
-    st.subheader("⚖️ Comparar dois deputados")
-    st.caption("Veja onde cada um é mais forte e onde a esquerda está 'dividida' entre eles.")
+    st.subheader("⚖️ Comparativo dos candidatos")
+    st.caption(
+        "O que cada candidato tem de mais significativo, lado a lado. As colunas de "
+        "**redes sociais** e **Observações** são **editáveis** — clique numa célula e escreva. "
+        "As edições valem nesta sessão; use o botão para baixar o resultado."
+    )
 
-    deps = [k for k in DATASETS if k != "Exemplo (ilustrativo)"]
-    cc1, cc2 = st.columns(2)
-    da = cc1.selectbox("Deputado A", deps, index=0, key="cmpA")
-    db = cc2.selectbox("Deputado B", deps, index=1, key="cmpB")
+    base = tabela_comparativa()
+    somente_readonly = [
+        "Candidato", "Cargo", "Votos", "% capta esquerda", "Voto órfão",
+        "Reduto (mais votos)", "Melhor alvo p/ crescer", "Regiões alto potencial",
+    ]
+    editada = st.data_editor(
+        base, width="stretch", hide_index=True, num_rows="fixed",
+        disabled=somente_readonly,
+        column_config={
+            "Votos": st.column_config.NumberColumn("Votos", format="%d"),
+            "Voto órfão": st.column_config.NumberColumn("Voto órfão", format="%d"),
+            "% capta esquerda": st.column_config.NumberColumn("% capta esquerda", format="%.1f%%"),
+        },
+    )
 
-    if da == db:
-        st.warning("Escolha dois deputados diferentes para comparar.")
-    else:
-        na, nb = nome_dep(da), nome_dep(db)
-        A = carregar(DATASETS[da])[["regiao", "votos_candidato"]].rename(columns={"votos_candidato": "A"})
-        B = carregar(DATASETS[db])[["regiao", "votos_candidato"]].rename(columns={"votos_candidato": "B"})
-        m = A.merge(B, on="regiao")
-
-        lidera_a = int((m["A"] > m["B"]).sum())
-        lidera_b = int((m["B"] > m["A"]).sum())
-        mc1, mc2, mc3 = st.columns(3)
-        mc1.metric(f"Votos · {na}", _br(m["A"].sum()))
-        mc2.metric(f"Votos · {nb}", _br(m["B"].sum()))
-        mc3.metric("Municípios em que cada um lidera", f"{lidera_a}  ×  {lidera_b}",
-                   help=f"{lidera_a} municípios onde {na} teve mais votos; {lidera_b} onde {nb} teve mais.")
-
-        mx = int(max(m["A"].max(), m["B"].max()))
-        figc = px.scatter(
-            m, x="A", y="B", hover_name="regiao",
-            labels={"A": f"Votos de {na}", "B": f"Votos de {nb}"},
-        )
-        figc.add_shape(type="line", x0=0, y0=0, x1=mx, y1=mx, line=dict(dash="dash", color="gray"))
-        figc.update_layout(height=480)
-        st.plotly_chart(figc, width="stretch")
-        st.caption(
-            f"Cada ponto é um município. **Acima** da linha → {nb} teve mais votos ali; "
-            f"**abaixo** → {na}. Pontos longe da linha são redutos de um deles; pontos sobre a "
-            "linha = a esquerda se dividiu igualmente entre os dois."
-        )
+    csv = editada.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        "⬇️ Baixar comparativo (CSV)", data=csv,
+        file_name="comparativo_candidatos.csv", mime="text/csv",
+    )
+    st.caption(
+        "💡 As colunas de redes sociais começam vazias — preencha aqui, ou me peça para deixá-las "
+        "fixas no app. As edições feitas nesta tela **não ficam salvas** ao recarregar (para isso, "
+        "os dados precisam ser gravados no repositório ou numa planilha conectada)."
+    )
