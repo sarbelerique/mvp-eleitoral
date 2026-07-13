@@ -425,3 +425,34 @@ with tab_comp:
         "**não ficam salvas** ao recarregar (para isso, os dados precisam ser gravados no "
         "repositório ou numa planilha conectada)."
     )
+
+    st.divider()
+    st.subheader("Votos × seguidores — força eleitoral × digital")
+    graf = editada.copy()
+    graf["Seguidores IG"] = pd.to_numeric(graf["Seguidores IG"], errors="coerce")
+    graf = graf.dropna(subset=["Seguidores IG"])
+    graf["Seguidores IG"] = graf["Seguidores IG"].astype(int)
+
+    if graf.empty:
+        st.info("Preencha os seguidores do Instagram para ver este gráfico.")
+    else:
+        fig_vs = px.scatter(
+            graf, x="Seguidores IG", y="Votos", text="Candidato", color="Cargo",
+            labels={"Seguidores IG": "Seguidores no Instagram", "Votos": "Votos (2022)"},
+        )
+        fig_vs.update_traces(textposition="top center", cliponaxis=False)
+        tot_v, tot_s = graf["Votos"].sum(), graf["Seguidores IG"].sum()
+        if tot_s:
+            ratio = tot_v / tot_s
+            mxs = int(graf["Seguidores IG"].max())
+            fig_vs.add_shape(
+                type="line", x0=0, y0=0, x1=mxs, y1=ratio * mxs,
+                line=dict(dash="dash", color="gray"),
+            )
+        fig_vs.update_layout(height=520, legend_title_text="")
+        st.plotly_chart(fig_vs, width="stretch")
+        st.caption(
+            "Cada ponto é um candidato; a linha tracejada é a **conversão média** do grupo "
+            "(votos por seguidor). **Acima** da linha → transforma audiência em voto acima da "
+            "média. **Abaixo** → tem **público online a ativar** para virar voto."
+        )
