@@ -1,0 +1,38 @@
+name: Atualizar redes sociais
+
+on:
+  schedule:
+    # Segunda e quinta, 11:00 UTC (~08:00 no horário de Brasília)
+    - cron: "0 11 * * 1,4"
+  workflow_dispatch: {}   # permite rodar manualmente pelo site do GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install requests
+
+      - name: Atualizar seguidores
+        run: python atualizar_redes.py
+
+      - name: Commitar se houver mudança
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/redes.csv data/redes_atualizado.txt
+          if git diff --cached --quiet; then
+            echo "Nada mudou."
+          else
+            git commit -m "Atualiza seguidores automaticamente ($(date +%d/%m/%Y))"
+            git push
+          fi

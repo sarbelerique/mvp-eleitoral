@@ -419,11 +419,15 @@ with tab_comp:
         "⬇️ Baixar comparativo (CSV)", data=csv,
         file_name="comparativo_candidatos.csv", mime="text/csv",
     )
+    try:
+        with open("data/redes_atualizado.txt", encoding="utf-8") as _f:
+            st.caption(f"🔄 Seguidores do Instagram atualizados automaticamente em **{_f.read().strip()}**.")
+    except OSError:
+        pass
     st.caption(
-        "📱 Seguidores do **Instagram** são **aproximados**, coletados na web (~jul/2026) — a rede "
-        "mais relevante aqui. Demais colunas ficam a preencher. As edições feitas nesta tela "
-        "**não ficam salvas** ao recarregar (para isso, os dados precisam ser gravados no "
-        "repositório ou numa planilha conectada)."
+        "📱 O **Instagram** é a rede mais relevante aqui. As demais colunas ficam a preencher. "
+        "As edições feitas nesta tela **não ficam salvas** ao recarregar (para isso, os dados "
+        "precisam ser gravados no repositório ou numa planilha conectada)."
     )
 
     st.divider()
