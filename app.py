@@ -568,8 +568,9 @@ with tab_ver:
     fig_ver.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=380, legend_title_text="")
     st.plotly_chart(fig_ver, use_container_width=True)
     st.caption(
-        "🟢 eleitos · ⚪ suplentes. Repare que **Luciana Boiteux** (16.797) foi a 1ª suplente — "
-        "ficou logo abaixo da última eleita na capital (Thais Ferreira, 17.206)."
+        "🟢 eleitos · ⚪ suplentes. **Luciana Boiteux** (16.797) foi a 1ª suplente — ficou logo "
+        "abaixo da última eleita na capital (Thais Ferreira, 17.206). Contexto histórico: em 2018 "
+        "ela concorreu a **Deputada Federal** (nº 5008) e teve **15.839** votos no estado."
     )
 
     st.divider()
