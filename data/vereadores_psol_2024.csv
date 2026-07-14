@@ -1,8 +1,11 @@
-Vereador,Município,Votos
-Rick Azevedo,Rio De Janeiro,29364
-Monica Benicio,Rio De Janeiro,25382
-William Siri,Rio De Janeiro,19872
-Thais Ferreira,Rio De Janeiro,17206
-Professor Tulio,Niterói,6789
-Benny Briolly,Niterói,4801
-Júlia Casamasso,Petrópolis,3135
+Vereador,Município,Votos,Situação
+Rick Azevedo,Rio De Janeiro,29364,Eleito
+Monica Benicio,Rio De Janeiro,25382,Eleito
+William Siri,Rio De Janeiro,19872,Eleito
+Thais Ferreira,Rio De Janeiro,17206,Eleito
+Luciana Boiteux,Rio De Janeiro,16797,Suplente
+Paulo Pinheiro,Rio De Janeiro,14889,Suplente
+Clarice Chacon,Rio De Janeiro,13787,Suplente
+Professor Tulio,Niterói,6789,Eleito
+Benny Briolly,Niterói,4801,Eleito
+Júlia Casamasso,Petrópolis,3135,Eleito

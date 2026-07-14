@@ -544,15 +544,16 @@ with tab_comp:
 
 # ── Vereadores ──────────────────────────────────────────────────────────────
 with tab_ver:
-    st.subheader("🏛️ Vereadores do PSOL eleitos — RJ 2024")
+    st.subheader("🏛️ Vereadores do PSOL — RJ 2024")
     st.caption(
-        "A base municipal do PSOL: vereadores(as) eleitos(as) na eleição de 2024, no estado do "
-        "Rio de Janeiro (dados reais do TSE, apenas os eleitos)."
+        "A base municipal do PSOL na eleição de 2024 (dados reais do TSE): os **eleitos** e alguns "
+        "**suplentes de destaque**. Base local = potenciais cabos eleitorais e articulação para os deputados."
     )
     ver = carregar_vereadores()
+    eleitos = ver[ver["Situação"] == "Eleito"]
     m1, m2 = st.columns(2)
-    m1.metric("Vereadores eleitos (PSOL)", len(ver))
-    m2.metric("Municípios com vereador PSOL", ver["Município"].nunique())
+    m1.metric("Vereadores eleitos (PSOL)", len(eleitos))
+    m2.metric("Municípios com eleito", eleitos["Município"].nunique())
 
     st.dataframe(
         ver.style.format({"Votos": "{:,.0f}"}),
@@ -560,14 +561,15 @@ with tab_ver:
     )
 
     fig_ver = px.bar(
-        ver.sort_values("Votos"), x="Votos", y="Vereador", orientation="h", color="Município",
+        ver.sort_values("Votos"), x="Votos", y="Vereador", orientation="h", color="Situação",
+        color_discrete_map={"Eleito": "#1D9E75", "Suplente": "#B4B2A9"},
         labels={"Votos": "Votos (2024)", "Vereador": ""},
     )
-    fig_ver.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=360, legend_title_text="")
+    fig_ver.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=380, legend_title_text="")
     st.plotly_chart(fig_ver, use_container_width=True)
     st.caption(
-        "Concentração na capital e em Niterói. É onde o PSOL tem quadros locais — potenciais "
-        "cabos eleitorais e articulação de base para os deputados."
+        "🟢 eleitos · ⚪ suplentes. Repare que **Luciana Boiteux** (16.797) foi a 1ª suplente — "
+        "ficou logo abaixo da última eleita na capital (Thais Ferreira, 17.206)."
     )
 
     st.divider()
