@@ -41,18 +41,23 @@ PRIORIDADE_DESC = {
     "Solo difícil": "pouca esquerda na região → menor retorno",
 }
 
-DATASETS = {
-    "Fed · Tarcísio Motta": "data/dep_tarcisio_motta.csv",
-    "Fed · Talíria Petrone": "data/dep_taliria_petrone.csv",
-    "Fed · Chico Alencar": "data/dep_chico_alencar.csv",
-    "Fed · Glauber Braga": "data/dep_glauber_braga.csv",
-    "Fed · Henrique Vieira": "data/dep_henrique_vieira.csv",
-    "Est · Renata Souza": "data/dep_renata_souza.csv",
-    "Est · Flávio Serafini": "data/dep_flavio_serafini.csv",
-    "Est · Dani Monteiro": "data/dep_dani_monteiro.csv",
-    "Est · Mônica Francisco": "data/dep_monica_francisco.csv",
-    "Est · Benny Briolly": "data/dep_benny_briolly.csv",
-    "Est · Josemar Carvalho": "data/dep_josemar_carvalho.csv",
+DEPUTADOS = {
+    "Federal": {
+        "Chico Alencar": "data/dep_chico_alencar.csv",
+        "Glauber Braga": "data/dep_glauber_braga.csv",
+        "Henrique Vieira": "data/dep_henrique_vieira.csv",
+        "Talíria Petrone": "data/dep_taliria_petrone.csv",
+        "Tarcísio Motta": "data/dep_tarcisio_motta.csv",
+    },
+    "Estadual": {
+        "Benny Briolly": "data/dep_benny_briolly.csv",
+        "Dani Monteiro": "data/dep_dani_monteiro.csv",
+        "Flávio Serafini": "data/dep_flavio_serafini.csv",
+        "Josemar Carvalho": "data/dep_josemar_carvalho.csv",
+        "Mônica Francisco": "data/dep_monica_francisco.csv",
+        "Renata Souza": "data/dep_renata_souza.csv",
+        "Yuri Moura": "data/dep_yuri_moura.csv",
+    },
 }
 
 
@@ -65,11 +70,6 @@ def _norm(s):
 def _br(n):
     """Formata número inteiro no padrão brasileiro (ponto de milhar)."""
     return f"{n:,.0f}".replace(",", ".")
-
-
-def nome_dep(chave):
-    """Nome limpo do deputado a partir da chave do seletor (tira 'Fed · ' / 'Est · ')."""
-    return chave[6:] if chave.startswith(("Fed ·", "Est ·")) else chave
 
 
 @st.cache_data
@@ -93,6 +93,12 @@ def carregar_tendencia(caminho="data/tendencia_federal.csv"):
     t = pd.read_csv(caminho)
     t["_norm"] = t["regiao"].map(_norm)
     return t
+
+
+@st.cache_data
+def carregar_vereadores(caminho="data/vereadores_psol_2024.csv"):
+    """Vereadores do PSOL eleitos no RJ em 2024."""
+    return pd.read_csv(caminho)
 
 
 def leitura_automatica(nome, r, o):
@@ -136,20 +142,21 @@ def carregar_redes(caminho="data/redes.csv"):
 def tabela_comparativa():
     """Uma linha por candidato com os números eleitorais mais significativos + redes sociais."""
     linhas = []
-    for chave, caminho in DATASETS.items():
-        dd = carregar(caminho)
-        oo = oportunidades(dd)
-        alvos = oo[oo["potencial_extra"] > 0]
-        linhas.append({
-            "Candidato": nome_dep(chave),
-            "Cargo": "Federal" if chave.startswith("Fed") else "Estadual",
-            "Votos": int(dd["votos_candidato"].sum()),
-            "% capta esquerda": round(oo["taxa_global"].iloc[0] * 100, 1),
-            "Voto órfão": int(dd["voto_orfao"].sum()),
-            "Reduto (mais votos)": dd.loc[dd["votos_candidato"].idxmax(), "regiao"],
-            "Melhor alvo p/ crescer": alvos.iloc[0]["regiao"] if not alvos.empty else "—",
-            "Regiões alto potencial": int((dd["prioridade"] == "Alto potencial").sum()),
-        })
+    for cargo, deps in DEPUTADOS.items():
+        for nm, caminho in deps.items():
+            dd = carregar(caminho)
+            oo = oportunidades(dd)
+            alvos = oo[oo["potencial_extra"] > 0]
+            linhas.append({
+                "Candidato": nm,
+                "Cargo": cargo,
+                "Votos": int(dd["votos_candidato"].sum()),
+                "% capta esquerda": round(oo["taxa_global"].iloc[0] * 100, 1),
+                "Voto órfão": int(dd["voto_orfao"].sum()),
+                "Reduto (mais votos)": dd.loc[dd["votos_candidato"].idxmax(), "regiao"],
+                "Melhor alvo p/ crescer": alvos.iloc[0]["regiao"] if not alvos.empty else "—",
+                "Regiões alto potencial": int((dd["prioridade"] == "Alto potencial").sum()),
+            })
     base = pd.DataFrame(linhas)
     redes = carregar_redes()
     base = base.merge(redes, on="Candidato", how="left")
@@ -185,8 +192,9 @@ with st.expander("👋 Como ler este painel (clique para abrir)"):
 with st.sidebar:
     st.header("Escolha o deputado")
     st.caption("Dados reais do TSE (PSOL, RJ 2022), por município.")
-    dataset = st.selectbox(
-        "Deputado", list(DATASETS), index=0, label_visibility="collapsed", key="dep_sel"
+    cargo = st.radio("Câmara", ["Federal", "Estadual"], horizontal=True, key="cargo_sel")
+    nome = st.selectbox(
+        "Deputado", sorted(DEPUTADOS[cargo], key=_norm), key="dep_sel",
     )
 
     with st.expander("📖 Glossário — o que cada termo significa"):
@@ -212,14 +220,12 @@ with st.sidebar:
 # ────────────────────────────────────────────────────────────────────────────
 # Dados do deputado selecionado
 # ────────────────────────────────────────────────────────────────────────────
-d = carregar(DATASETS[dataset]).copy()
+d = carregar(DEPUTADOS[cargo][nome]).copy()
 d["_norm"] = d["regiao"].map(_norm)
 r = resumo(d)
 o = oportunidades(d)
-nome = nome_dep(dataset)
 
-cargo = "Deputado Federal" if dataset.startswith("Fed") else "Deputado Estadual"
-st.caption(f"Mostrando: **{nome}** — PSOL, {cargo}, RJ 2022 (dados reais do TSE).")
+st.caption(f"Mostrando: **{nome}** — PSOL, Deputado {cargo}, RJ 2022 (dados reais do TSE).")
 
 # Recado principal
 alvo_top = o[o["potencial_extra"] > 0].head(1)
@@ -233,8 +239,9 @@ if not alvo_top.empty:
 # ────────────────────────────────────────────────────────────────────────────
 # Abas
 # ────────────────────────────────────────────────────────────────────────────
-tab_geral, tab_mapa, tab_tend, tab_agir, tab_tab, tab_comp = st.tabs(
-    ["📊 Visão geral", "🗺️ Mapa", "📈 Tendência", "🎯 Onde agir", "📋 Tabela", "⚖️ Comparar"]
+tab_geral, tab_mapa, tab_tend, tab_agir, tab_tab, tab_comp, tab_ver = st.tabs(
+    ["📊 Visão geral", "🗺️ Mapa", "📈 Tendência", "🎯 Onde agir", "📋 Tabela",
+     "⚖️ Comparar", "🏛️ Vereadores"]
 )
 
 # ── Visão geral ─────────────────────────────────────────────────────────────
@@ -534,6 +541,34 @@ with tab_comp:
             "(votos por seguidor). **Acima** da linha → transforma audiência em voto acima da "
             "média. **Abaixo** → tem **público online a ativar** para virar voto."
         )
+
+# ── Vereadores ──────────────────────────────────────────────────────────────
+with tab_ver:
+    st.subheader("🏛️ Vereadores do PSOL eleitos — RJ 2024")
+    st.caption(
+        "A base municipal do PSOL: vereadores(as) eleitos(as) na eleição de 2024, no estado do "
+        "Rio de Janeiro (dados reais do TSE, apenas os eleitos)."
+    )
+    ver = carregar_vereadores()
+    m1, m2 = st.columns(2)
+    m1.metric("Vereadores eleitos (PSOL)", len(ver))
+    m2.metric("Municípios com vereador PSOL", ver["Município"].nunique())
+
+    st.dataframe(
+        ver.style.format({"Votos": "{:,.0f}"}),
+        use_container_width=True, hide_index=True,
+    )
+
+    fig_ver = px.bar(
+        ver.sort_values("Votos"), x="Votos", y="Vereador", orientation="h", color="Município",
+        labels={"Votos": "Votos (2024)", "Vereador": ""},
+    )
+    fig_ver.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=360, legend_title_text="")
+    st.plotly_chart(fig_ver, use_container_width=True)
+    st.caption(
+        "Concentração na capital e em Niterói. É onde o PSOL tem quadros locais — potenciais "
+        "cabos eleitorais e articulação de base para os deputados."
+    )
 
     st.divider()
     st.subheader("📈 Crescimento de seguidores no tempo")
