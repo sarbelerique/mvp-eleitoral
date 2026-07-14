@@ -60,6 +60,23 @@ DEPUTADOS = {
     },
 }
 
+# Vereadores (PSOL, RJ 2024): análise por ZONA eleitoral dentro do município deles.
+VEREADORES = {
+    "Rick Azevedo": {"csv": "data/ver_zona_rick_azevedo.csv", "municipio": "Rio de Janeiro"},
+    "Monica Benicio": {"csv": "data/ver_zona_monica_benicio.csv", "municipio": "Rio de Janeiro"},
+    "William Siri": {"csv": "data/ver_zona_william_siri.csv", "municipio": "Rio de Janeiro"},
+    "Thais Ferreira": {"csv": "data/ver_zona_thais_ferreira.csv", "municipio": "Rio de Janeiro"},
+    "Luciana Boiteux": {"csv": "data/ver_zona_luciana_boiteux.csv", "municipio": "Rio de Janeiro"},
+    "Paulo Pinheiro": {"csv": "data/ver_zona_paulo_pinheiro.csv", "municipio": "Rio de Janeiro"},
+    "Clarice Chacon": {"csv": "data/ver_zona_clarice_chacon.csv", "municipio": "Rio de Janeiro"},
+    "Professor Tulio": {"csv": "data/ver_zona_professor_tulio.csv", "municipio": "Niterói"},
+    "Benny Briolly": {"csv": "data/ver_zona_benny_briolly.csv", "municipio": "Niterói"},
+    "Júlia Casamasso": {"csv": "data/ver_zona_julia_casamasso.csv", "municipio": "Petrópolis"},
+}
+
+# Referência do eleitorado de esquerda por município (Dep. Estadual 2022) p/ a projeção.
+REF_ESTADUAL = "data/dep_yuri_moura.csv"
+
 
 def _norm(s):
     """Normaliza nome de município para casar com o geojson (maiúsculas, sem acento)."""
@@ -101,8 +118,8 @@ def carregar_vereadores(caminho="data/vereadores_psol_2024.csv"):
     return pd.read_csv(caminho)
 
 
-def leitura_automatica(nome, r, o):
-    """Parágrafo-resumo em português claro para o deputado selecionado."""
+def leitura_automatica(nome, r, o, escopo="no estado", unidade_pl="regiões"):
+    """Parágrafo-resumo em português claro para o candidato selecionado."""
     taxa = o["taxa_global"].iloc[0]
     alvos = o[o["potencial_extra"] > 0].head(3)["regiao"].tolist()
     if len(alvos) > 1:
@@ -111,12 +128,12 @@ def leitura_automatica(nome, r, o):
         lugares = alvos[0] if alvos else ""
     texto = (
         f"📌 **{nome}** somou **{_br(r['total_votos_candidato'])}** votos. "
-        f"De cada 100 votos de esquerda no estado, ele levou cerca de **{taxa * 100:.0f}**. "
+        f"De cada 100 votos de esquerda {escopo}, ele levou cerca de **{taxa * 100:.0f}**. "
         f"Sobraram **{_br(r['total_voto_orfao'])}** votos de esquerda que foram para *outros* "
         f"candidatos — o estoque a conquistar."
     )
     if alvos:
-        texto += f" Os melhores lugares para crescer são **{lugares}**."
+        texto += f" As melhores {unidade_pl} para crescer são **{lugares}**."
     return texto
 
 
@@ -190,12 +207,14 @@ with st.expander("👋 Como ler este painel (clique para abrir)"):
 # Barra lateral
 # ────────────────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("Escolha o deputado")
-    st.caption("Dados reais do TSE (PSOL, RJ 2022), por município.")
-    cargo = st.radio("Câmara", ["Federal", "Estadual"], horizontal=True, key="cargo_sel")
-    nome = st.selectbox(
-        "Deputado", sorted(DEPUTADOS[cargo], key=_norm), key="dep_sel",
-    )
+    st.header("Escolha o candidato")
+    cargo = st.radio("Cargo", ["Federal", "Estadual", "Vereador"], horizontal=True, key="cargo_sel")
+    if cargo == "Vereador":
+        nome = st.selectbox("Vereador(a)", sorted(VEREADORES, key=_norm), key="ver_sel")
+        st.caption("Vereadores do PSOL (RJ 2024) — análise por **zona eleitoral** da cidade.")
+    else:
+        nome = st.selectbox("Deputado", sorted(DEPUTADOS[cargo], key=_norm), key="dep_sel")
+        st.caption("Deputados do PSOL (RJ 2022) — dados reais do TSE, por **município**.")
 
     with st.expander("📖 Glossário — o que cada termo significa"):
         st.markdown(
@@ -220,19 +239,36 @@ with st.sidebar:
 # ────────────────────────────────────────────────────────────────────────────
 # Dados do deputado selecionado
 # ────────────────────────────────────────────────────────────────────────────
-d = carregar(DEPUTADOS[cargo][nome]).copy()
+is_vereador = cargo == "Vereador"
+if is_vereador:
+    municipio = VEREADORES[nome]["municipio"]
+    d = carregar(VEREADORES[nome]["csv"]).copy()
+    unidade, unidade_pl = "zona", "zonas"
+    escopo = f"em {municipio}"
+else:
+    municipio = None
+    d = carregar(DEPUTADOS[cargo][nome]).copy()
+    unidade, unidade_pl = "município", "municípios"
+    escopo = "no estado"
+
 d["_norm"] = d["regiao"].map(_norm)
 r = resumo(d)
 o = oportunidades(d)
 
-st.caption(f"Mostrando: **{nome}** — PSOL, Deputado {cargo}, RJ 2022 (dados reais do TSE).")
+if is_vereador:
+    st.caption(
+        f"Mostrando: **{nome}** — Vereador(a) PSOL, {municipio} (2024). "
+        "Análise por **zona eleitoral** da cidade."
+    )
+else:
+    st.caption(f"Mostrando: **{nome}** — PSOL, Deputado {cargo}, RJ 2022 (dados reais do TSE).")
 
 # Recado principal
 alvo_top = o[o["potencial_extra"] > 0].head(1)
 if not alvo_top.empty:
     linha = alvo_top.iloc[0]
     st.success(
-        f"🎯 **Recado principal:** o melhor lugar para {nome} buscar votos novos é "
+        f"🎯 **Recado principal:** a melhor {unidade} para {nome} buscar votos novos é "
         f"**{linha['regiao']}** — cerca de **+{_br(linha['potencial_extra'])}** votos possíveis."
     )
 
@@ -246,12 +282,12 @@ tab_geral, tab_mapa, tab_tend, tab_agir, tab_tab, tab_comp, tab_ver = st.tabs(
 
 # ── Visão geral ─────────────────────────────────────────────────────────────
 with tab_geral:
-    st.markdown(leitura_automatica(nome, r, o))
+    st.markdown(leitura_automatica(nome, r, o, escopo, unidade_pl))
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric(
         "Votos do candidato", _br(r["total_votos_candidato"]),
-        help="Total de votos nominais que o candidato recebeu no estado.",
+        help="Total de votos nominais que o candidato recebeu.",
     )
     c2.metric(
         "Voto de esquerda órfão", _br(r["total_voto_orfao"]),
@@ -259,12 +295,12 @@ with tab_geral:
         "É o 'estoque' potencial a conquistar.",
     )
     c3.metric(
-        "Regiões de alto potencial", r["regioes_alto_potencial"],
-        help="Municípios com muita esquerda onde ele foi pouco votado.",
+        f"{unidade_pl.capitalize()} de alto potencial", r["regioes_alto_potencial"],
+        help=f"{unidade_pl.capitalize()} com muita esquerda onde ele foi pouco votado.",
     )
     c4.metric(
-        "Regiões a consolidar", r["regioes_consolidar"],
-        help="Municípios onde ele já vai bem e deve manter/reforçar.",
+        f"{unidade_pl.capitalize()} a consolidar", r["regioes_consolidar"],
+        help=f"{unidade_pl.capitalize()} onde ele já vai bem e deve manter/reforçar.",
     )
 
     st.markdown(
@@ -289,15 +325,60 @@ with tab_geral:
     fig2.update_layout(legend_title_text="")
     st.plotly_chart(fig2, use_container_width=True)
     st.caption(
-        "Cada bolha é um município (tamanho = nº de eleitores). Bolhas mais à **direita** têm "
+        f"Cada bolha é uma {unidade} (tamanho = nº de eleitores). Bolhas mais à **direita** têm "
         "muita esquerda; mais **embaixo** = o candidato foi pouco votado. Direita + embaixo = "
         "🟢 alto potencial."
     )
 
-# ── Mapa ────────────────────────────────────────────────────────────────────
+# ── Mapa / Projeção ─────────────────────────────────────────────────────────
 with tab_mapa:
     gj, nomes_geo = carregar_geojson()
-    if d["_norm"].isin(nomes_geo).mean() >= 0.8:
+    if is_vereador:
+        st.subheader("🎯 Projeção como pré-candidato a deputado")
+        st.caption(
+            f"Se **{nome}** disputasse **deputado estadual** (o RJ inteiro), o eleitorado a "
+            f"conquistar seria o voto de esquerda de todo o estado. Hoje a base está concentrada "
+            f"em **{municipio}**."
+        )
+        ref = carregar(REF_ESTADUAL).copy()
+        ref["_norm"] = ref["regiao"].map(_norm)
+        home = _norm(municipio)
+        total_esq = int(ref["votos_esquerda"].sum())
+        esq_home = int(ref.loc[ref["_norm"] == home, "votos_esquerda"].sum())
+        p1, p2, p3 = st.columns(3)
+        p1.metric("Base atual (2024)", _br(r["total_votos_candidato"]),
+                  help=f"Votos do vereador em {municipio} em 2024.")
+        p2.metric("Esquerda no estado", _br(total_esq),
+                  help="Voto de esquerda p/ Dep. Estadual (2022) no RJ inteiro — o 'mercado' de um deputado.")
+        p3.metric(f"Esquerda em {municipio}", _br(esq_home),
+                  help="Voto de esquerda no município-base, onde o nome já é conhecido.")
+
+        ref["destaque"] = ref["_norm"].eq(home).map({True: "Base", False: "Estado"})
+        fig_p = px.choropleth(
+            ref, geojson=gj, locations="_norm", featureidkey="properties.norm",
+            color="votos_esquerda", color_continuous_scale="Blues", hover_name="regiao",
+            hover_data={"_norm": False, "votos_esquerda": ":,"},
+            labels={"votos_esquerda": "Esquerda (Estadual 2022)"},
+        )
+        fig_p.update_geos(fitbounds="locations", visible=False)
+        fig_p.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=500,
+                            coloraxis_colorbar_title_text="")
+        st.plotly_chart(fig_p, use_container_width=True)
+        st.caption(
+            "Azul mais forte = mais voto de esquerda naquele município. É o mapa do 'mercado' que "
+            f"um deputado disputa — o desafio de {nome} seria levar o nome de {municipio} para os "
+            "demais focos de esquerda."
+        )
+        topm = ref.sort_values("votos_esquerda", ascending=False).head(12)
+        fig_pb = px.bar(
+            topm.sort_values("votos_esquerda"), x="votos_esquerda", y="regiao", orientation="h",
+            color="destaque", color_discrete_map={"Base": "#1D9E75", "Estado": "#8AB4D8"},
+            labels={"votos_esquerda": "Voto de esquerda (Estadual 2022)", "regiao": ""},
+        )
+        fig_pb.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=360, legend_title_text="")
+        st.plotly_chart(fig_pb, use_container_width=True)
+        st.caption("🟢 = município-base do vereador · 🔵 = maiores reservatórios de esquerda a conquistar.")
+    elif d["_norm"].isin(nomes_geo).mean() >= 0.8:
         st.subheader("Mapa por município")
         rotulos = {
             "Voto órfão": "voto_orfao",
@@ -380,9 +461,9 @@ with tab_agir:
     taxa_global = o["taxa_global"].iloc[0]
     st.subheader("🎯 Onde agir para captar mais votos")
     st.markdown(
-        f"Regiões com **muita esquerda** onde o candidato rende **abaixo da própria média** de "
-        f"captação (**{taxa_global:.1%}** dos votos de esquerda). É onde há mais espaço para "
-        f"crescer num eleitorado que já existe — melhor relação **esforço × retorno**."
+        f"{unidade_pl.capitalize()} com **muita esquerda** onde o candidato rende **abaixo da "
+        f"própria média** de captação (**{taxa_global:.1%}** dos votos de esquerda). É onde há mais "
+        f"espaço para crescer num eleitorado que já existe — melhor relação **esforço × retorno**."
     )
 
     alvos = o[o["potencial_extra"] > 0]
@@ -421,17 +502,17 @@ with tab_agir:
 
     st.caption(
         "⚠️ Priorização **relativa**: mede onde há esquerda sub-aproveitada, não votos garantidos. "
-        "Os redutos onde o candidato já domina (ex.: a capital) saem daqui de propósito — lá o "
-        "crescimento marginal é menor."
+        "As áreas onde o candidato já domina saem daqui de propósito — lá o crescimento marginal "
+        "é menor."
     )
 
 # ── Tabela ──────────────────────────────────────────────────────────────────
 with tab_tab:
-    st.subheader("Tabela por município")
+    st.subheader(f"Tabela por {unidade}")
     f1, f2, f3 = st.columns([1, 1, 2])
-    so_alto = f1.checkbox("Só alto potencial", help="Mostrar apenas os municípios de alto potencial.")
+    so_alto = f1.checkbox("Só alto potencial", help=f"Mostrar apenas as {unidade_pl} de alto potencial.")
     topn = f2.slider("Top N (por voto órfão)", 5, len(d), len(d))
-    busca = f3.text_input("🔎 Buscar município", placeholder="ex.: Niterói")
+    busca = f3.text_input(f"🔎 Buscar {unidade}", placeholder="ex.: Niterói" if not is_vereador else "ex.: Zona 5")
 
     t = d.copy()
     if so_alto:
@@ -444,7 +525,7 @@ with tab_tab:
         "regiao", "votos_candidato", "pct_candidato", "pct_esquerda",
         "voto_orfao", "pct_nao_capturado", "prioridade",
     ]].rename(columns={
-        "regiao": "Município",
+        "regiao": unidade.capitalize(),
         "votos_candidato": "Votos dele",
         "pct_candidato": "% do candidato",
         "pct_esquerda": "% de esquerda",
@@ -460,7 +541,7 @@ with tab_tab:
         }),
         use_container_width=True, hide_index=True,
     )
-    st.caption(f"{len(t)} de {len(d)} municípios exibidos.")
+    st.caption(f"{len(t)} de {len(d)} {unidade_pl} exibidas.")
 
     buffer = io.BytesIO()
     o.drop(columns=["_norm"], errors="ignore").to_excel(buffer, index=False)
@@ -548,6 +629,10 @@ with tab_ver:
     st.caption(
         "A base municipal do PSOL na eleição de 2024 (dados reais do TSE): os **eleitos** e alguns "
         "**suplentes de destaque**. Base local = potenciais cabos eleitorais e articulação para os deputados."
+    )
+    st.info(
+        "💡 Na barra lateral, escolha **Cargo → Vereador** para a análise detalhada de cada um "
+        "(voto órfão por zona da cidade) e a **projeção como pré-candidato a deputado**."
     )
     ver = carregar_vereadores()
     eleitos = ver[ver["Situação"] == "Eleito"]
