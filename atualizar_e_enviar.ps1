@@ -11,7 +11,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-git add data/redes.csv data/redes_atualizado.txt
+git add data/redes.csv data/redes_atualizado.txt data/redes_historico.csv
 git diff --cached --quiet
 if ($LASTEXITCODE -ne 0) {
     git commit -m "Atualiza seguidores automaticamente ($(Get-Date -Format dd/MM/yyyy))"

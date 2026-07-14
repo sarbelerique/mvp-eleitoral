@@ -15,6 +15,24 @@ from engine import diagnosticar, oportunidades, resumo
 
 st.set_page_config(page_title="Diagnóstico eleitoral", page_icon="🗳️", layout="wide")
 
+# No celular: faz as colunas quebrarem em 2 por linha (ex.: métricas 2x2) e ajusta fontes.
+st.markdown(
+    """
+    <style>
+    @media (max-width: 640px) {
+        [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
+        [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+            min-width: calc(50% - 0.5rem) !important;
+            flex: 1 1 calc(50% - 0.5rem) !important;
+        }
+        [data-testid="stMetricValue"] { font-size: 1.35rem; }
+        [data-testid="stMetricLabel"] { font-size: 0.8rem; }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 CORES = {"Alto potencial": "#1D9E75", "Consolidar": "#378ADD", "Solo difícil": "#B4B2A9"}
 
 PRIORIDADE_DESC = {
@@ -465,3 +483,25 @@ with tab_comp:
             "(votos por seguidor). **Acima** da linha → transforma audiência em voto acima da "
             "média. **Abaixo** → tem **público online a ativar** para virar voto."
         )
+
+    st.divider()
+    st.subheader("📈 Crescimento de seguidores no tempo")
+    try:
+        hist = pd.read_csv("data/redes_historico.csv")
+    except FileNotFoundError:
+        hist = pd.DataFrame(columns=["data", "Candidato", "seguidores"])
+    if hist["data"].nunique() < 2:
+        st.info(
+            "O histórico está **começando a acumular** (a coleta roda 2×/semana). Com mais alguns "
+            "pontos ao longo das semanas, aparece aqui a curva de crescimento de cada candidato."
+        )
+    else:
+        hist["data"] = pd.to_datetime(hist["data"])
+        hist["seguidores"] = pd.to_numeric(hist["seguidores"], errors="coerce")
+        fig_hist = px.line(
+            hist.sort_values("data"), x="data", y="seguidores", color="Candidato", markers=True,
+            labels={"data": "Data", "seguidores": "Seguidores no Instagram", "Candidato": ""},
+        )
+        fig_hist.update_layout(height=480, legend_title_text="")
+        st.plotly_chart(fig_hist, width="stretch")
+        st.caption("Evolução dos seguidores no Instagram desde o início da coleta automática.")

@@ -11,6 +11,7 @@ Uso:  python atualizar_redes.py
 
 import csv
 import datetime
+import os
 import sys
 import time
 
@@ -18,6 +19,7 @@ import requests
 
 CSV_PATH = "data/redes.csv"
 STAMP_PATH = "data/redes_atualizado.txt"
+HIST_PATH = "data/redes_historico.csv"
 COL = "Seguidores IG"
 
 API = "https://www.instagram.com/api/v1/users/web_profile_info/?username={}"
@@ -69,9 +71,29 @@ def main():
     with open(STAMP_PATH, "w", encoding="utf-8") as f:
         f.write(datetime.date.today().strftime("%d/%m/%Y"))
 
+    registrar_historico(linhas)
+
     print(f"Atualizados {atualizados}/{len(linhas)} perfis.")
     if atualizados == 0:
         sys.exit("Nenhum perfil atualizado (Instagram provavelmente bloqueou).")
+
+
+def registrar_historico(linhas):
+    """Acrescenta o retrato de hoje ao histórico (uma linha por candidato/dia)."""
+    hoje = datetime.date.today().isoformat()  # YYYY-MM-DD (ordenável)
+    campos = ["data", "Candidato", "seguidores"]
+    antigos = []
+    if os.path.exists(HIST_PATH):
+        with open(HIST_PATH, encoding="utf-8") as f:
+            antigos = [r for r in csv.DictReader(f) if r.get("data") != hoje]
+    novos = [
+        {"data": hoje, "Candidato": l.get("Candidato", ""), "seguidores": l[COL]}
+        for l in linhas if l.get(COL)
+    ]
+    with open(HIST_PATH, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=campos)
+        w.writeheader()
+        w.writerows(antigos + novos)
 
 
 if __name__ == "__main__":
