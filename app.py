@@ -87,6 +87,14 @@ def carregar(caminho):
     return diagnosticar(pd.read_csv(caminho))
 
 
+@st.cache_data
+def carregar_tendencia(caminho="data/tendencia_federal.csv"):
+    """Variação da fatia de esquerda por município, 2018→2022 (Dep. Federal)."""
+    t = pd.read_csv(caminho)
+    t["_norm"] = t["regiao"].map(_norm)
+    return t
+
+
 def leitura_automatica(nome, r, o):
     """Parágrafo-resumo em português claro para o deputado selecionado."""
     taxa = o["taxa_global"].iloc[0]
@@ -225,8 +233,8 @@ if not alvo_top.empty:
 # ────────────────────────────────────────────────────────────────────────────
 # Abas
 # ────────────────────────────────────────────────────────────────────────────
-tab_geral, tab_mapa, tab_agir, tab_tab, tab_comp = st.tabs(
-    ["📊 Visão geral", "🗺️ Mapa", "🎯 Onde agir", "📋 Tabela", "⚖️ Comparar"]
+tab_geral, tab_mapa, tab_tend, tab_agir, tab_tab, tab_comp = st.tabs(
+    ["📊 Visão geral", "🗺️ Mapa", "📈 Tendência", "🎯 Onde agir", "📋 Tabela", "⚖️ Comparar"]
 )
 
 # ── Visão geral ─────────────────────────────────────────────────────────────
@@ -316,6 +324,49 @@ with tab_mapa:
         )
     else:
         st.info("O mapa está disponível apenas para dados por município do RJ.")
+
+# ── Tendência ───────────────────────────────────────────────────────────────
+with tab_tend:
+    st.subheader("📈 Tendência da esquerda: 2018 → 2022")
+    st.caption(
+        "Mudança na fatia de votos de **esquerda** (Deputado Federal) em cada município, de 2018 "
+        "para 2022, em **pontos percentuais**. É o retrato do **campo como um todo** — não de um "
+        "candidato específico —, então não muda com o deputado selecionado."
+    )
+    tend = carregar_tendencia()
+    gj_t, _ = carregar_geojson()
+    fig_t = px.choropleth(
+        tend, geojson=gj_t, locations="_norm", featureidkey="properties.norm",
+        color="delta_pp", color_continuous_scale="RdYlGn", color_continuous_midpoint=0,
+        hover_name="regiao",
+        hover_data={"_norm": False, "esq_pct_2018": ":.1f", "esq_pct_2022": ":.1f",
+                    "delta_pp": ":+.1f"},
+        labels={"delta_pp": "Variação (p.p.)"},
+    )
+    fig_t.update_geos(fitbounds="locations", visible=False)
+    fig_t.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=520)
+    st.plotly_chart(fig_t, width="stretch")
+    st.caption("🟢 verde = a esquerda **cresceu**; 🔴 vermelho = **encolheu** (Dep. Federal).")
+
+    ca, cb = st.columns(2)
+    with ca:
+        st.markdown("**📈 Onde a esquerda mais cresceu**")
+        for row in tend.sort_values("delta_pp", ascending=False).head(6).itertuples():
+            st.markdown(
+                f"- **{row.regiao}**: {row.esq_pct_2018:.0f}% → {row.esq_pct_2022:.0f}% "
+                f"(**+{row.delta_pp:.0f} p.p.**)"
+            )
+    with cb:
+        st.markdown("**📉 Onde a esquerda mais encolheu**")
+        for row in tend.sort_values("delta_pp").head(6).itertuples():
+            st.markdown(
+                f"- **{row.regiao}**: {row.esq_pct_2018:.0f}% → {row.esq_pct_2022:.0f}% "
+                f"(**{row.delta_pp:.0f} p.p.**)"
+            )
+    st.caption(
+        "No estado, a esquerda passou de ~21% (2018) para ~23% (2022) dos votos de Dep. Federal. "
+        "Cruze com a aba **Onde agir**: crescimento + voto órfão = terreno mais promissor."
+    )
 
 # ── Onde agir ───────────────────────────────────────────────────────────────
 with tab_agir:
