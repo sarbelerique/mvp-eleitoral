@@ -112,12 +112,6 @@ def carregar_tendencia(caminho="data/tendencia_federal.csv"):
     return t
 
 
-@st.cache_data
-def carregar_vereadores(caminho="data/vereadores_psol_2024.csv"):
-    """Vereadores do PSOL eleitos no RJ em 2024."""
-    return pd.read_csv(caminho)
-
-
 def leitura_automatica(nome, r, o, escopo="no estado", unidade_pl="regiões"):
     """Parágrafo-resumo em português claro para o candidato selecionado."""
     taxa = o["taxa_global"].iloc[0]
@@ -275,9 +269,8 @@ if not alvo_top.empty:
 # ────────────────────────────────────────────────────────────────────────────
 # Abas
 # ────────────────────────────────────────────────────────────────────────────
-tab_geral, tab_mapa, tab_tend, tab_agir, tab_tab, tab_comp, tab_ver = st.tabs(
-    ["📊 Visão geral", "🗺️ Mapa", "📈 Tendência", "🎯 Onde agir", "📋 Tabela",
-     "⚖️ Comparar", "🏛️ Vereadores"]
+tab_geral, tab_mapa, tab_tend, tab_agir, tab_tab, tab_comp = st.tabs(
+    ["📊 Visão geral", "🗺️ Mapa", "📈 Tendência", "🎯 Onde agir", "📋 Tabela", "⚖️ Comparar"]
 )
 
 # ── Visão geral ─────────────────────────────────────────────────────────────
@@ -622,41 +615,6 @@ with tab_comp:
             "(votos por seguidor). **Acima** da linha → transforma audiência em voto acima da "
             "média. **Abaixo** → tem **público online a ativar** para virar voto."
         )
-
-# ── Vereadores ──────────────────────────────────────────────────────────────
-with tab_ver:
-    st.subheader("🏛️ Vereadores do PSOL — RJ 2024")
-    st.caption(
-        "A base municipal do PSOL na eleição de 2024 (dados reais do TSE): os **eleitos** e alguns "
-        "**suplentes de destaque**. Base local = potenciais cabos eleitorais e articulação para os deputados."
-    )
-    st.info(
-        "💡 Na barra lateral, escolha **Cargo → Vereador** para a análise detalhada de cada um "
-        "(voto órfão por zona da cidade) e a **projeção como pré-candidato a deputado**."
-    )
-    ver = carregar_vereadores()
-    eleitos = ver[ver["Situação"] == "Eleito"]
-    m1, m2 = st.columns(2)
-    m1.metric("Vereadores eleitos (PSOL)", len(eleitos))
-    m2.metric("Municípios com eleito", eleitos["Município"].nunique())
-
-    st.dataframe(
-        ver.style.format({"Votos": "{:,.0f}"}),
-        use_container_width=True, hide_index=True,
-    )
-
-    fig_ver = px.bar(
-        ver.sort_values("Votos"), x="Votos", y="Vereador", orientation="h", color="Situação",
-        color_discrete_map={"Eleito": "#1D9E75", "Suplente": "#B4B2A9"},
-        labels={"Votos": "Votos (2024)", "Vereador": ""},
-    )
-    fig_ver.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=380, legend_title_text="")
-    st.plotly_chart(fig_ver, use_container_width=True)
-    st.caption(
-        "🟢 eleitos · ⚪ suplentes. **Luciana Boiteux** (16.797) foi a 1ª suplente — ficou logo "
-        "abaixo da última eleita na capital (Thais Ferreira, 17.206). Contexto histórico: em 2018 "
-        "ela concorreu a **Deputada Federal** (nº 5008) e teve **15.839** votos no estado."
-    )
 
     st.divider()
     st.subheader("📈 Crescimento de seguidores no tempo")
