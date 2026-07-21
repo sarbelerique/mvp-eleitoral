@@ -60,18 +60,18 @@ DEPUTADOS = {
     },
 }
 
-# Vereadores (PSOL, RJ 2024): análise por ZONA eleitoral dentro do município deles.
+# Vereadores (PSOL, RJ 2024): análise por BAIRRO dentro do município deles.
 VEREADORES = {
-    "Rick Azevedo": {"csv": "data/ver_zona_rick_azevedo.csv", "municipio": "Rio de Janeiro"},
-    "Monica Benicio": {"csv": "data/ver_zona_monica_benicio.csv", "municipio": "Rio de Janeiro"},
-    "William Siri": {"csv": "data/ver_zona_william_siri.csv", "municipio": "Rio de Janeiro"},
-    "Thais Ferreira": {"csv": "data/ver_zona_thais_ferreira.csv", "municipio": "Rio de Janeiro"},
-    "Luciana Boiteux": {"csv": "data/ver_zona_luciana_boiteux.csv", "municipio": "Rio de Janeiro"},
-    "Paulo Pinheiro": {"csv": "data/ver_zona_paulo_pinheiro.csv", "municipio": "Rio de Janeiro"},
-    "Clarice Chacon": {"csv": "data/ver_zona_clarice_chacon.csv", "municipio": "Rio de Janeiro"},
-    "Professor Tulio": {"csv": "data/ver_zona_professor_tulio.csv", "municipio": "Niterói"},
-    "Benny Briolly": {"csv": "data/ver_zona_benny_briolly.csv", "municipio": "Niterói"},
-    "Júlia Casamasso": {"csv": "data/ver_zona_julia_casamasso.csv", "municipio": "Petrópolis"},
+    "Rick Azevedo": {"csv": "data/ver_bairro_rick_azevedo.csv", "municipio": "Rio de Janeiro"},
+    "Monica Benicio": {"csv": "data/ver_bairro_monica_benicio.csv", "municipio": "Rio de Janeiro"},
+    "William Siri": {"csv": "data/ver_bairro_william_siri.csv", "municipio": "Rio de Janeiro"},
+    "Thais Ferreira": {"csv": "data/ver_bairro_thais_ferreira.csv", "municipio": "Rio de Janeiro"},
+    "Luciana Boiteux": {"csv": "data/ver_bairro_luciana_boiteux.csv", "municipio": "Rio de Janeiro"},
+    "Paulo Pinheiro": {"csv": "data/ver_bairro_paulo_pinheiro.csv", "municipio": "Rio de Janeiro"},
+    "Clarice Chacon": {"csv": "data/ver_bairro_clarice_chacon.csv", "municipio": "Rio de Janeiro"},
+    "Professor Tulio": {"csv": "data/ver_bairro_professor_tulio.csv", "municipio": "Niterói"},
+    "Benny Briolly": {"csv": "data/ver_bairro_benny_briolly.csv", "municipio": "Niterói"},
+    "Júlia Casamasso": {"csv": "data/ver_bairro_julia_casamasso.csv", "municipio": "Petrópolis"},
 }
 
 # Referência do eleitorado de esquerda por município (Dep. Estadual 2022) p/ a projeção.
@@ -127,7 +127,7 @@ def leitura_automatica(nome, r, o, escopo="no estado", unidade_pl="regiões"):
         f"candidatos — o estoque a conquistar."
     )
     if alvos:
-        texto += f" As melhores {unidade_pl} para crescer são **{lugares}**."
+        texto += f" Os melhores lugares para crescer são **{lugares}**."
     return texto
 
 
@@ -205,7 +205,7 @@ with st.sidebar:
     cargo = st.radio("Cargo", ["Federal", "Estadual", "Vereador"], horizontal=True, key="cargo_sel")
     if cargo == "Vereador":
         nome = st.selectbox("Vereador(a)", sorted(VEREADORES, key=_norm), key="ver_sel")
-        st.caption("Vereadores do PSOL (RJ 2024) — análise por **zona eleitoral** da cidade.")
+        st.caption("Vereadores do PSOL (RJ 2024) — análise por **bairro** da cidade.")
     else:
         nome = st.selectbox("Deputado", sorted(DEPUTADOS[cargo], key=_norm), key="dep_sel")
         st.caption("Deputados do PSOL (RJ 2022) — dados reais do TSE, por **município**.")
@@ -237,7 +237,7 @@ is_vereador = cargo == "Vereador"
 if is_vereador:
     municipio = VEREADORES[nome]["municipio"]
     d = carregar(VEREADORES[nome]["csv"]).copy()
-    unidade, unidade_pl = "zona", "zonas"
+    unidade, unidade_pl = "bairro", "bairros"
     escopo = f"em {municipio}"
 else:
     municipio = None
@@ -252,7 +252,7 @@ o = oportunidades(d)
 if is_vereador:
     st.caption(
         f"Mostrando: **{nome}** — Vereador(a) PSOL, {municipio} (2024). "
-        "Análise por **zona eleitoral** da cidade."
+        "Análise por **bairro** da cidade."
     )
 else:
     st.caption(f"Mostrando: **{nome}** — PSOL, Deputado {cargo}, RJ 2022 (dados reais do TSE).")
@@ -262,7 +262,7 @@ alvo_top = o[o["potencial_extra"] > 0].head(1)
 if not alvo_top.empty:
     linha = alvo_top.iloc[0]
     st.success(
-        f"🎯 **Recado principal:** a melhor {unidade} para {nome} buscar votos novos é "
+        f"🎯 **Recado principal:** o melhor lugar para {nome} buscar votos novos é "
         f"**{linha['regiao']}** — cerca de **+{_br(linha['potencial_extra'])}** votos possíveis."
     )
 
@@ -507,8 +507,8 @@ with tab_tab:
     if len(d) > 5:
         topn = f2.slider("Top N (por voto órfão)", 5, len(d), len(d))
     else:
-        topn = len(d)  # poucas unidades (ex.: cidade com 2-4 zonas): mostra todas
-    busca = f3.text_input(f"🔎 Buscar {unidade}", placeholder="ex.: Niterói" if not is_vereador else "ex.: Zona 5")
+        topn = len(d)  # poucas unidades: mostra todas
+    busca = f3.text_input(f"🔎 Buscar {unidade}", placeholder="ex.: Niterói" if not is_vereador else "ex.: Tijuca")
 
     t = d.copy()
     if so_alto:
