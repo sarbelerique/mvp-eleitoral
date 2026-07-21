@@ -316,7 +316,7 @@ with tab_geral:
     fig2.update_xaxes(tickformat=".0%")
     fig2.update_yaxes(tickformat=".0%")
     fig2.update_layout(legend_title_text="")
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, width="stretch")
     st.caption(
         f"Cada bolha é uma {unidade} (tamanho = nº de eleitores). Bolhas mais à **direita** têm "
         "muita esquerda; mais **embaixo** = o candidato foi pouco votado. Direita + embaixo = "
@@ -356,7 +356,7 @@ with tab_mapa:
         fig_p.update_geos(fitbounds="locations", visible=False)
         fig_p.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=500,
                             coloraxis_colorbar_title_text="")
-        st.plotly_chart(fig_p, use_container_width=True)
+        st.plotly_chart(fig_p, width="stretch")
         st.caption(
             "Azul mais forte = mais voto de esquerda naquele município. É o mapa do 'mercado' que "
             f"um deputado disputa — o desafio de {nome} seria levar o nome de {municipio} para os "
@@ -369,7 +369,7 @@ with tab_mapa:
             labels={"votos_esquerda": "Voto de esquerda (Estadual 2022)", "regiao": ""},
         )
         fig_pb.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=360, legend_title_text="")
-        st.plotly_chart(fig_pb, use_container_width=True)
+        st.plotly_chart(fig_pb, width="stretch")
         st.caption("🟢 = município-base do vereador · 🔵 = maiores reservatórios de esquerda a conquistar.")
     elif d["_norm"].isin(nomes_geo).mean() >= 0.8:
         st.subheader("Mapa por município")
@@ -397,7 +397,7 @@ with tab_mapa:
             fig_mapa.update_layout(coloraxis_colorbar_title_text="")
         fig_mapa.update_geos(fitbounds="locations", visible=False)
         fig_mapa.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=560, legend_title_text="")
-        st.plotly_chart(fig_mapa, use_container_width=True)
+        st.plotly_chart(fig_mapa, width="stretch")
         st.caption(
             "Áreas mais **escuras** = mais voto de esquerda que **não** foi ao candidato. "
             "O maior reservatório absoluto costuma ser a capital — mas nem sempre é onde há mais "
@@ -426,7 +426,7 @@ with tab_tend:
     )
     fig_t.update_geos(fitbounds="locations", visible=False)
     fig_t.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=520)
-    st.plotly_chart(fig_t, use_container_width=True)
+    st.plotly_chart(fig_t, width="stretch")
     st.caption("🟢 verde = a esquerda **cresceu**; 🔴 vermelho = **encolheu** (Dep. Federal).")
 
     ca, cb = st.columns(2)
@@ -491,7 +491,7 @@ with tab_agir:
                 yaxis={"categoryorder": "total ascending"}, coloraxis_showscale=False,
                 margin=dict(l=0, r=0, t=0, b=0), height=380,
             )
-            st.plotly_chart(fig3, use_container_width=True)
+            st.plotly_chart(fig3, width="stretch")
 
     st.caption(
         "⚠️ Priorização **relativa**: mede onde há esquerda sub-aproveitada, não votos garantidos. "
@@ -532,7 +532,7 @@ with tab_tab:
             "% do candidato": "{:.1%}", "% de esquerda": "{:.1%}",
             "% da esquerda que não votou nele": "{:.1%}",
         }),
-        use_container_width=True, hide_index=True,
+        width="stretch", hide_index=True,
     )
     st.caption(f"{len(t)} de {len(d)} {unidade_pl} exibidas.")
 
@@ -559,7 +559,7 @@ with tab_comp:
         "Reduto (mais votos)", "Melhor alvo p/ crescer", "Regiões alto potencial",
     ]
     editada = st.data_editor(
-        base, use_container_width=True, hide_index=True, num_rows="fixed",
+        base, width="stretch", hide_index=True, num_rows="fixed",
         disabled=somente_readonly,
         column_config={
             "Votos": st.column_config.NumberColumn("Votos", format="%d"),
@@ -609,7 +609,7 @@ with tab_comp:
                 line=dict(dash="dash", color="gray"),
             )
         fig_vs.update_layout(height=520, legend_title_text="")
-        st.plotly_chart(fig_vs, use_container_width=True)
+        st.plotly_chart(fig_vs, width="stretch")
         st.caption(
             "Cada ponto é um candidato; a linha tracejada é a **conversão média** do grupo "
             "(votos por seguidor). **Acima** da linha → transforma audiência em voto acima da "
@@ -635,5 +635,5 @@ with tab_comp:
             labels={"data": "Data", "seguidores": "Seguidores no Instagram", "Candidato": ""},
         )
         fig_hist.update_layout(height=480, legend_title_text="")
-        st.plotly_chart(fig_hist, use_container_width=True)
+        st.plotly_chart(fig_hist, width="stretch")
         st.caption("Evolução dos seguidores no Instagram desde o início da coleta automática.")
