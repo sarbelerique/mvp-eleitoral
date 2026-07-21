@@ -504,7 +504,10 @@ with tab_tab:
     st.subheader(f"Tabela por {unidade}")
     f1, f2, f3 = st.columns([1, 1, 2])
     so_alto = f1.checkbox("Só alto potencial", help=f"Mostrar apenas as {unidade_pl} de alto potencial.")
-    topn = f2.slider("Top N (por voto órfão)", 5, len(d), len(d))
+    if len(d) > 5:
+        topn = f2.slider("Top N (por voto órfão)", 5, len(d), len(d))
+    else:
+        topn = len(d)  # poucas unidades (ex.: cidade com 2-4 zonas): mostra todas
     busca = f3.text_input(f"🔎 Buscar {unidade}", placeholder="ex.: Niterói" if not is_vereador else "ex.: Zona 5")
 
     t = d.copy()
